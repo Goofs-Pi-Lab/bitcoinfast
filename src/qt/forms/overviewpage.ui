@@ -265,14 +265,14 @@
             </property>
             <property name="minimumSize">
              <size>
-              <width>128</width>
-              <height>128</height>
+              <width>300</width>
+              <height>200</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>128</width>
-              <height>128</height>
+              <width>300</width>
+              <height>200</height>
              </size>
             </property>
             <property name="cursor">
@@ -287,8 +287,8 @@
             </property>
             <property name="iconSize">
              <size>
-              <width>128</width>
-              <height>128</height>
+              <width>300</width>
+              <height>200</height>
              </size>
             </property>
             <property name="flat">
