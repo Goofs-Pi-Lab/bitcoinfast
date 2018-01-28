@@ -138,7 +138,7 @@ OBJS= \
 all: bitcoinfastd
 
 test check: test_bitcoinfast FORCE
-	./test_BottleCaps
+	./test_BitcoinFast
 
 # auto-generated dependencies:
 -include obj/*.P
