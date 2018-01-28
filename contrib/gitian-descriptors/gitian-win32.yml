@@ -49,7 +49,7 @@ script: |
   cp -r bitcoin $OUTDIR/src
   cp -r bitcoin nsis
   cd bitcoin
-  cp $OUTDIR/src/doc/README_windows.txt $OUTDIR/readme.txt
+  cp $OUTDIR/src/doc/README.md $OUTDIR/readme.txt
   cp $OUTDIR/src/COPYING $OUTDIR/license.txt
   export LD_PRELOAD=/usr/lib/faketime/libfaketime.so.1
   export FAKETIME=$REFERENCE_DATETIME
