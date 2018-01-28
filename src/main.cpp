@@ -1201,14 +1201,24 @@ unsigned int GetNextTargetRequired_V3(const CBlockIndex* pindexLast, bool fProof
   int64 myTargetTimespan = 60 * 60 * 24;  // 24 hours
   int64 myTargetSpacingWorkMax = 2 * nStakeTargetSpacing; 
 
-// back to basics. let miners jack up difficulty, and let pos move the chain
-    CBigNum bnTargetLimit = bnProofOfWorkLimit;
+  CBigNum bnTargetLimit = bnProofOfWorkLimit;
 
-    if(fProofOfStake)
-    {
-        // Proof-of-Stake blocks has own target limit since nVersion=3 supermajority on mainNet and always on testNet
-        bnTargetLimit = bnProofOfStakeLimit;
-    }
+  if(fProofOfStake)
+  {
+    // Proof-of-Stake blocks has own target limit since nVersion=3 supermajority on mainNet and always on testNet
+    bnTargetLimit = bnProofOfStakeLimit;
+  }
+  else
+  {// continue KGW for pow 
+    static const int64 BlocksTargetSpacing = 60; // 60 seconds
+    unsigned int TimeDaySeconds = 60 * 60 * 24;
+    int64 PastSecondsMin = TimeDaySeconds * 0.25;
+    int64 PastSecondsMax = TimeDaySeconds * 2.8;
+    uint64 PastBlocksMin = PastSecondsMin / BlocksTargetSpacing;
+    uint64 PastBlocksMax = PastSecondsMax / BlocksTargetSpacing;
+        
+    return KimotoGravityWell(pindexLast, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
+  }
 
     if (pindexLast == NULL)
         return bnTargetLimit.GetCompact(); // genesis block
