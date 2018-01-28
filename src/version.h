@@ -35,8 +35,8 @@ static const int MIN_PROTO_VERSION = 209;
 static const int CADDR_TIME_VERSION = 31402;
 
 // only request blocks from nodes outside this range of versions
-static const int NOBLKS_VERSION_START = 60001;
-static const int NOBLKS_VERSION_END = 60500;
+static const int NOBLKS_VERSION_START = 60002;
+static const int NOBLKS_VERSION_END = 60004;
 
 // BIP 0031, pong message, is enabled for all versions AFTER this one
 static const int BIP0031_VERSION = 60000;
@@ -45,7 +45,7 @@ static const int BIP0031_VERSION = 60000;
 static const int MEMPOOL_GD_VERSION = 60002;
 
 #define DISPLAY_VERSION_MAJOR       2
-#define DISPLAY_VERSION_MINOR       1
+#define DISPLAY_VERSION_MINOR       2
 #define DISPLAY_VERSION_REVISION    0
 #define DISPLAY_VERSION_BUILD       1
 

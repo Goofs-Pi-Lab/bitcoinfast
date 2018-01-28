@@ -36,10 +36,13 @@ static const int64 MAX_MONEY = 2500000000 * COIN;			// 2.5 bil
 static const int64 MAX_MINT_PROOF_OF_STAKE = 0.25 * COIN;	// 25% annual interest
 static const int64 MIN_TXOUT_AMOUNT = MIN_TX_FEE;
 
-static const int POW_CUTOFF_BLOCK = 2500000000;
+static const uint POW_CUTOFF_BLOCK = 2500000000;
 
 // time to switch to KimotoGravityWell
 static const unsigned int VERSION2_SWITCH_TIME = 1511136000; // Mon Nov 20 00:00:00 UTC 2017
+
+// time to fix pos/pow seperation
+static const unsigned int VERSION3_SWITCH_TIME = 1517092200; // Thu Jan 27 14:30:00 PST 2017
 
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
@@ -115,6 +118,7 @@ void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash
 bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey);
 unsigned int GetNextTargetRequired_V1(const CBlockIndex* pindexLast, bool fProofOfStake);
 unsigned int GetNextTargetRequired_V2(const CBlockIndex* pindexLast, bool fProofOfStake);
+unsigned int GetNextTargetRequired_V3(const CBlockIndex* pindexLast, bool fProofOfStake);
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
 int64 GetProofOfWorkReward(int nHeight, int64 nFees, uint256 prevHash);
 int64 GetProofOfStakeReward(int64 nCoinAge, unsigned int nBits, unsigned int nTime, int nHeight);
@@ -596,7 +600,7 @@ public:
     {
         // Large (in bytes) low-priority (new, small-coin) transactions
         // need a fee.
-        return dPriority > COIN * 1440 / 250;
+        return dPriority > COIN * 2880 / 250;
     }
 
     int64 GetMinFee(unsigned int nBlockSize=1, bool fAllowFree=false, enum GetMinFee_mode mode=GMF_BLOCK, unsigned int nBytes = 0) const;

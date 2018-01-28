@@ -42,7 +42,7 @@ static CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
 static CBigNum bnProofOfWorkLimitTestNet(~uint256(0) >> 20);
 static CBigNum bnProofOfStakeLimitTestNet(~uint256(0) >> 20);
 
-unsigned int nStakeMinAge = 60 * 60 * 24 * 1;	// minimum age for coin age: 1d
+unsigned int nStakeMinAge = 60 * 60 * 24;	// minimum age for coin age: 1d
 unsigned int nStakeMaxAge = 60 * 60 * 24 * 100;	// stake age of full weight: 100d
 unsigned int nStakeTargetSpacing = 60;			// 60 sec block spacing
 
@@ -304,22 +304,7 @@ bool CTransaction::IsStandard() const
         if (!txin.scriptSig.IsPushOnly())
             return false;
 
-        // 2014-04-19 Adriano https://bitcointalk.org/index.php?action=profile;u=112568
-        // The following address was lost during distribution with 196780608.602771 coins in it. Blocking just in case :-)
-        static const CBitcoinAddress lostWallet ("CKGK6MFmBkreG7k5sU8gDEJNVJ57QZtN3H");
-        uint256 hashBlock;
-        CTransaction txPrev;
 
-        if(GetTransaction(txin.prevout.hash, txPrev, hashBlock)){  // get the vin's previous transaction
-            CTxDestination source;
-            if (ExtractDestination(txPrev.vout[txin.prevout.n].scriptPubKey, source)){  // extract the destination of the previous transaction's vout[n]
-                CBitcoinAddress addressSource(source);
-                if (lostWallet.Get() == addressSource.Get()){
-                    error("Banned Address %s tried to send a transaction (rejecting it).", addressSource.ToString().c_str());
-                    return false;
-               }
-            }
-        }
 	}
 
     BOOST_FOREACH(const CTxOut& txout, vout) {
@@ -983,12 +968,13 @@ int64 GetProofOfWorkReward(int nHeight, int64 nFees, uint256 prevHash)
 
 // miner's coin stake reward based on nBits and coin age spent (coin-days)
 // simple algorithm, not depend on the diff
+//const int YEARLY_BLOCKCOUNT = 0;	// 365 * 0
 int64 GetProofOfStakeReward(int64 nCoinAge, unsigned int nBits, unsigned int nTime, int nHeight)
 {
-    int64 nRewardCoinYear;
-	nRewardCoinYear = MAX_MINT_PROOF_OF_STAKE;
+  int64 nRewardCoinYear;
+  nRewardCoinYear = MAX_MINT_PROOF_OF_STAKE;
 
-	int64 nSubsidy = nCoinAge * nRewardCoinYear / 365;
+  int64 nSubsidy = nCoinAge * nRewardCoinYear / 365;
 	if (fDebug && GetBoolArg("-printcreation"))
         printf("GetProofOfStakeReward(): create=%s nCoinAge=%"PRI64d" nBits=%d\n", FormatMoney(nSubsidy).c_str(), nCoinAge, nBits);
 
@@ -1010,9 +996,6 @@ unsigned int GetStakeMaxAge(unsigned int nTime)
 //  else
       return nStakeMaxAge; // 90 days
 }
-
-static const int64 nTargetTimespan = 60;  
-static const int64 nTargetSpacingWorkMax = 30; 
 
 //
 // maximum nBits value could possible be required nTime after
@@ -1062,16 +1045,22 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     return pindex;
 }
 
-unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
+unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake) 
 {
+  if (pindexLast->nTime > VERSION3_SWITCH_TIME)
+    return GetNextTargetRequired_V3(pindexLast, fProofOfStake);
+
   if (pindexLast->nTime > VERSION2_SWITCH_TIME)
-      return GetNextTargetRequired_V2(pindexLast, fProofOfStake);
-   else
-      return GetNextTargetRequired_V1(pindexLast, fProofOfStake);
+    return GetNextTargetRequired_V2(pindexLast, fProofOfStake);
+
+  return GetNextTargetRequired_V1(pindexLast, fProofOfStake);
 }
 
 unsigned int GetNextTargetRequired_V1(const CBlockIndex* pindexLast, bool fProofOfStake) 
 {
+  int64 myTargetTimespan = 60;		//old
+  int64 myTargetSpacingWorkMax =30;	//old
+
     CBigNum bnTargetLimit = bnProofOfWorkLimit;
 
     if(fProofOfStake)
@@ -1095,9 +1084,9 @@ unsigned int GetNextTargetRequired_V1(const CBlockIndex* pindexLast, bool fProof
 	{
 		nActualSpacing = 1;
 	}
-	else if(nActualSpacing > nTargetTimespan)
+	else if(nActualSpacing > myTargetTimespan)
 	{
-		nActualSpacing = nTargetTimespan;
+		nActualSpacing = myTargetTimespan;
 	}
 
     // ppcoin: target change every block
@@ -1105,8 +1094,8 @@ unsigned int GetNextTargetRequired_V1(const CBlockIndex* pindexLast, bool fProof
     CBigNum bnNew;
     bnNew.SetCompact(pindexPrev->nBits);
 
-    int64 nTargetSpacing = fProofOfStake? nStakeTargetSpacing : min(nTargetSpacingWorkMax, (int64) nStakeTargetSpacing * (1 + pindexLast->nHeight - pindexPrev->nHeight));
-    int64 nInterval = nTargetTimespan / nTargetSpacing;
+    int64 nTargetSpacing = fProofOfStake? nStakeTargetSpacing : min(myTargetSpacingWorkMax, (int64) nStakeTargetSpacing * (1 + pindexLast->nHeight - pindexPrev->nHeight));
+    int64 nInterval = myTargetTimespan / nTargetSpacing;
     bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
     bnNew /= ((nInterval + 1) * nTargetSpacing);
 	
@@ -1187,10 +1176,10 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, uint64 Targ
     bnNew = bnProofOfWorkLimit;
         
   /// debug print
-  printf("Difficulty Retarget - Kimoto Gravity Well\n");
-  printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
-  printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
-  printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+//  printf("Difficulty Retarget - Kimoto Gravity Well\n");
+//  printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
+//  printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
+//  printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
         
   return bnNew.GetCompact();
 }
@@ -1205,6 +1194,56 @@ unsigned int GetNextTargetRequired_V2(const CBlockIndex* pindexLast, bool fProof
   uint64 PastBlocksMax = PastSecondsMax / BlocksTargetSpacing;
         
   return KimotoGravityWell(pindexLast, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
+}
+
+unsigned int GetNextTargetRequired_V3(const CBlockIndex* pindexLast, bool fProofOfStake)
+{
+  int64 myTargetTimespan = 60 * 60 * 24;  // 24 hours
+  int64 myTargetSpacingWorkMax = 2 * nStakeTargetSpacing; 
+
+// back to basics. let miners jack up difficulty, and let pos move the chain
+    CBigNum bnTargetLimit = bnProofOfWorkLimit;
+
+    if(fProofOfStake)
+    {
+        // Proof-of-Stake blocks has own target limit since nVersion=3 supermajority on mainNet and always on testNet
+        bnTargetLimit = bnProofOfStakeLimit;
+    }
+
+    if (pindexLast == NULL)
+        return bnTargetLimit.GetCompact(); // genesis block
+
+    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
+    if (pindexPrev->pprev == NULL)
+        return bnTargetLimit.GetCompact(); // first block
+    const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
+    if (pindexPrevPrev->pprev == NULL)
+        return bnTargetLimit.GetCompact(); // second block
+
+    int64 nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
+	if(nActualSpacing < 0)
+	{
+		nActualSpacing = 1;
+	}
+	else if(nActualSpacing > myTargetTimespan)
+	{
+		nActualSpacing = myTargetTimespan;
+	}
+
+    // ppcoin: target change every block
+    // ppcoin: retarget with exponential moving toward target spacing
+    CBigNum bnNew;
+    bnNew.SetCompact(pindexPrev->nBits);
+
+    int64 nTargetSpacing = fProofOfStake? nStakeTargetSpacing : min(myTargetSpacingWorkMax, (int64) nStakeTargetSpacing * (1 + pindexLast->nHeight - pindexPrev->nHeight));
+    int64 nInterval = myTargetTimespan / nTargetSpacing;
+    bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
+    bnNew /= ((nInterval + 1) * nTargetSpacing);
+	
+    if (bnNew > bnTargetLimit)
+        bnNew = bnTargetLimit;
+
+    return bnNew.GetCompact();
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
@@ -1628,8 +1667,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     // Now that the whole chain is irreversibly beyond that time it is applied to all blocks except the
     // two in the chain that violate it. This prevents exploiting the issue against nodes in their
     // initial block download.
-    bool fEnforceBIP30 = true; // Always active in BitcoinFast
-    bool fStrictPayToScriptHash = true; // Always active in BitcoinFast
+    bool fEnforceBIP30 = true; // Always active
+    bool fStrictPayToScriptHash = true; // Always active
 
     //// issue here: it doesn't know the version
     unsigned int nTxPos;
@@ -2229,9 +2268,6 @@ bool CBlock::AcceptBlock()
     CBlockIndex* pindexPrev = (*mi).second;
     int nHeight = pindexPrev->nHeight+1;
 
-	//if (IsProofOfWork() && nHeight > POW_CUTOFF_BLOCK)
-        //return DoS(100, error("AcceptBlock() : No PoW block allowed anymore (height = %d)", nHeight));
-
     // Check proof-of-work or proof-of-stake
     if (nBits != GetNextTargetRequired(pindexPrev, IsProofOfStake()))
         return DoS(100, error("AcceptBlock() : incorrect %s", IsProofOfWork() ? "proof-of-work" : "proof-of-stake"));
@@ -2245,24 +2281,6 @@ bool CBlock::AcceptBlock()
     {
         if (!tx.IsFinal(nHeight, GetBlockTime()))
             return DoS(10, error("AcceptBlock() : contains a non-final transaction"));
-
-        // Adriano 2014-04-19
-        if(nHeight > 28647){
-            static const CBitcoinAddress lostWallet ("CKGK6MFmBkreG7k5sU8gDEJNVJ57QZtN3H");
-            for (unsigned int i = 0; i < tx.vin.size(); i++){
-                uint256 hashBlock;
-                CTransaction txPrev;
-                if(GetTransaction(tx.vin[i].prevout.hash, txPrev, hashBlock)){  // get the vin's previous transaction
-                    CTxDestination source;
-                    if (ExtractDestination(txPrev.vout[tx.vin[i].prevout.n].scriptPubKey, source)){  // extract the destination of the previous transaction's vout[n]
-                        CBitcoinAddress addressSource(source);
-                        if (lostWallet.Get() == addressSource.Get()){
-                            return error("CBlock::AcceptBlock() : Banned Address %s tried to send a transaction (rejecting it).", addressSource.ToString().c_str());
-                        }
-                    }
-                }
-            }
-        }
     }
 
     // Check that the block chain matches the known block chain up to a checkpoint
@@ -2689,6 +2707,7 @@ bool LoadBlockIndex(bool fAllowNew)
             return false;
 
         // Genesis block
+        // Genesis block
         const char* pszTimestamp = "November 30, 2014, BitcoinFast Baby! 1417308818.";
         CTransaction txNew;
         txNew.nTime = nChainStartTime;
@@ -2706,20 +2725,20 @@ bool LoadBlockIndex(bool fAllowNew)
         block.nBits    = bnProofOfWorkLimit.GetCompact();
         block.nNonce   = 1424737;
 
-        if ( false && (block.GetHash() != hashGenesisBlock)) {
-
-        // This will figure out a valid hash and Nonce if you're
-        // creating a different genesis block:
-            uint256 hashTarget = CBigNum().SetCompact(block.nBits).getuint256();
-            while (block.GetHash() > hashTarget)
-               {
-                   ++block.nNonce;
-                   if (block.nNonce == 0)
-                   {
-                       printf("NONCE WRAPPED, incrementing time");
-                       ++block.nTime;
-                   }
-               }
+        if (false  && (block.GetHash() != hashGenesisBlock)) {
+	 
+		// This will figure out a valid hash and Nonce if you're
+		// creating a different genesis block:
+		    uint256 hashTarget = CBigNum().SetCompact(block.nBits).getuint256();
+		    while (block.GetHash() > hashTarget)
+		       {
+		           ++block.nNonce;
+		           if (block.nNonce == 0)
+		           {
+		               printf("NONCE WRAPPED, incrementing time");
+		               ++block.nTime;
+		           }
+		       }
         }
 
         //// debug print
@@ -2941,11 +2960,11 @@ string GetWarnings(string strFor)
 
     // ppcoin: should not enter safe mode for longer invalid chain
     // ppcoin: if sync-checkpoint is too old do not enter safe mode
-    if (Checkpoints::IsSyncCheckpointTooOld(60 * 60 * 24 * 365) && !fTestNet && !IsInitialBlockDownload())
-    {
+//    if (Checkpoints::IsSyncCheckpointTooOld(60 * 60 * 24 * 365) && !fTestNet && !IsInitialBlockDownload())
+//    {
 //        nPriority = 100;
 //        strStatusBar = "WARNING: Checkpoint is too old. Wait for block chain to download, or notify developers.";
-    }
+//    }
 
     // ppcoin: if detected invalid checkpoint enter safe mode
     if (Checkpoints::hashInvalidCheckpoint != 0)
@@ -3071,6 +3090,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
           }
           printf("\n");
         }
+
         if (!vRecv.empty())
             vRecv >> pfrom->nStartingHeight;
 
@@ -4690,3 +4710,4 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
         }
     }
 }
+

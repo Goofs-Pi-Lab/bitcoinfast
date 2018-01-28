@@ -241,7 +241,7 @@ Value getaccount(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw runtime_error(
-            "getaccount <BitcoinFastaddress>\n"
+            "getaccount <Bitcoinfastaddress>\n"
             "Returns the account associated with the given address.");
 
     CBitcoinAddress address(params[0].get_str());
@@ -1704,7 +1704,7 @@ Value repairwallet(const Array& params, bool fHelp)
     return result;
 }
 
-// BitcoinFast: resend unconfirmed wallet transactions
+// resend unconfirmed wallet transactions
 Value resendtx(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
@@ -1790,13 +1790,13 @@ Value zapwallettxes(const Array& params, bool fHelp)
     }
     else if (nLoadWalletRet == DB_TOO_NEW)
     {
-      mess="Error loading wallet.dat: Wallet requires newer version of BitcoinPlus\n";
+      mess="Error loading wallet.dat: Wallet requires newer version of BitcoinFast\n";
       printf(mess);
       return(mess);
     }
     else if (nLoadWalletRet == DB_NEED_REWRITE)
     {
-      mess="Wallet needed to be rewritten: restart BitcoinPlus to complete\n";
+      mess="Wallet needed to be rewritten: restart BitcoinFast to complete\n";
       printf(mess);
       return(mess);
     }
@@ -1845,8 +1845,4 @@ Value zapwallettxes(const Array& params, bool fHelp)
 
   return (mess);
 }
-
-
-
-
 

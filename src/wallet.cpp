@@ -1441,6 +1441,7 @@ bool CWallet::GetStakeWeightFromValue(const int64& nTime, const int64& nValue, u
     return true;
 }
 
+
 // ppcoin: create coin stake transaction
 bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64 nSearchInterval, CTransaction& txNew)
 {
