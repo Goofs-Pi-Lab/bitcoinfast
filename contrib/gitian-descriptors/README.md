@@ -29,14 +29,14 @@
 12. wget 'http://download.oracle.com/berkeley-db/db-4.8.30.NC.tar.gz'
 13. wget 'http://miniupnp.free.fr/files/download.php?file=miniupnpc-1.6.tar.gz' -O miniupnpc-1.6.tar.gz
 14. wget 'http://downloads.sourceforge.net/project/libpng/zlib/1.2.7/zlib-1.2.7.tar.gz'
-15. wget 'http://sourceforge.net/projects/libpng/files/libpng15/older-releases/1.5.12/libpng-1.5.12.tar.gz/download'
+15. wget 'http://sourceforge.net/projects/libpng/files/libpng15/older-releases/1.5.12/libpng-1.5.12.tar.gz'
 16. wget 'http://fukuchi.org/works/qrencode/qrencode-3.2.0.tar.bz2'
 17. wget 'http://download.qt-project.org/archive/qt/4.7/qt-everywhere-opensource-src-4.7.4.tar.gz'
 18. cd ..
 
 ## Build Base Virtual Machine
 
-19. sudo bin/make-base-vm --arch i386
+19. sudo bin/make-base-vm --arch i386 --suite precise
 
 ## Build Bitcoin-Fast Windows Client
 
