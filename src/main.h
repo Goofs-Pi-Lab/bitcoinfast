@@ -42,7 +42,7 @@ static const uint POW_CUTOFF_BLOCK = 2500000000;
 static const unsigned int VERSION2_SWITCH_TIME = 1511136000; // Mon Nov 20 00:00:00 UTC 2017
 
 // time to fix pos/pow seperation
-static const unsigned int VERSION3_SWITCH_TIME = 1517092200; // Thu Jan 27 14:30:00 PST 2017
+static const unsigned int VERSION3_SWITCH_TIME = 1519603200; // Mon Feb 26 00:00:00 UTC 2018
 
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
