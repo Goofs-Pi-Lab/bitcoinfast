@@ -68,7 +68,7 @@ Section -Main SEC0000
     SetOverwrite on
     File ../release/BitcoinFast-qt.exe
     File /oname=license.txt ../COPYING
-    File /oname=readme.txt ../doc/README.me
+    File /oname=readme.txt ../doc/README.md
     SetOutPath $INSTDIR\daemon
     File ../src/BitcoinFastd.exe
     SetOutPath $INSTDIR\src
