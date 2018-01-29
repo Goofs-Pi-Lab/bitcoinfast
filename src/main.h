@@ -36,7 +36,7 @@ static const int64 MAX_MONEY = 2500000000 * COIN;			// 2.5 bil
 static const int64 MAX_MINT_PROOF_OF_STAKE = 0.25 * COIN;	// 25% annual interest
 static const int64 MIN_TXOUT_AMOUNT = MIN_TX_FEE;
 
-static const uint POW_CUTOFF_BLOCK = 2500000000;
+static const int POW_CUTOFF_BLOCK = 2500000000;
 
 // time to switch to KimotoGravityWell
 static const unsigned int VERSION2_SWITCH_TIME = 1511136000; // Mon Nov 20 00:00:00 UTC 2017
