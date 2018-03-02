@@ -3091,7 +3091,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         {
           vRecv >> pfrom->strSubVer;
           printf("peer connecting subver is %s",pfrom->strSubVer.c_str());
-          int iSubVer=pfrom->strSubVer.find("BitcoinFast");
+          int iSubVer=pfrom->strSubVer.find("BitcoinFast:3");
           if(iSubVer < 1)
           {
             printf("  -  disconnecting .....\n");
