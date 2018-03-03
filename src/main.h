@@ -44,6 +44,9 @@ static const unsigned int VERSION2_SWITCH_TIME = 1511136000; // Mon Nov 20 00:00
 // time to fix pos/pow seperation
 static const unsigned int VERSION3_SWITCH_TIME = 1519603200; // Mon Feb 26 00:00:00 UTC 2018
 
+// time to ditch KimotoGravityWell
+static const unsigned int VERSION4_SWITCH_TIME = 1521417600; // Mon Mar 19 00:00:00 UTC 2018
+
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
@@ -119,6 +122,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey);
 unsigned int GetNextTargetRequired_V1(const CBlockIndex* pindexLast, bool fProofOfStake);
 unsigned int GetNextTargetRequired_V2(const CBlockIndex* pindexLast, bool fProofOfStake);
 unsigned int GetNextTargetRequired_V3(const CBlockIndex* pindexLast, bool fProofOfStake);
+unsigned int GetNextTargetRequired_V4(const CBlockIndex* pindexLast, bool fProofOfStake);
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
 int64 GetProofOfWorkReward(int nHeight, int64 nFees, uint256 prevHash);
 int64 GetProofOfStakeReward(int64 nCoinAge, unsigned int nBits, unsigned int nTime, int nHeight);

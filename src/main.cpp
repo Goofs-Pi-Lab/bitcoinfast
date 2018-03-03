@@ -1047,6 +1047,9 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
 
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake) 
 {
+  if (pindexLast->nTime > VERSION4_SWITCH_TIME)
+    return GetNextTargetRequired_V4(pindexLast, fProofOfStake);
+
   if (pindexLast->nTime > VERSION3_SWITCH_TIME)
     return GetNextTargetRequired_V3(pindexLast, fProofOfStake);
 
@@ -1229,6 +1232,53 @@ unsigned int GetNextTargetRequired_V3(const CBlockIndex* pindexLast, bool fProof
     const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
     if (pindexPrevPrev->pprev == NULL)
         return bnTargetLimit.GetCompact(); // second block
+
+    int64 nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
+	if(nActualSpacing < 0)
+	{
+		nActualSpacing = 1;
+	}
+	else if(nActualSpacing > myTargetTimespan)
+	{
+		nActualSpacing = myTargetTimespan;
+	}
+
+    // ppcoin: target change every block
+    // ppcoin: retarget with exponential moving toward target spacing
+    CBigNum bnNew;
+    bnNew.SetCompact(pindexPrev->nBits);
+
+    int64 nTargetSpacing = fProofOfStake? nStakeTargetSpacing : min(myTargetSpacingWorkMax, (int64) nStakeTargetSpacing * (1 + pindexLast->nHeight - pindexPrev->nHeight));
+    int64 nInterval = myTargetTimespan / nTargetSpacing;
+    bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
+    bnNew /= ((nInterval + 1) * nTargetSpacing);
+	
+    if (bnNew > bnTargetLimit)
+        bnNew = bnTargetLimit;
+
+    return bnNew.GetCompact();
+}
+
+unsigned int GetNextTargetRequired_V4(const CBlockIndex* pindexLast, bool fProofOfStake)
+{
+  int64 myTargetTimespan = 60 * 60 * 24;  // 24 hours
+  int64 myTargetSpacingWorkMax = 2 * nStakeTargetSpacing; 
+  CBigNum bnTargetLimit = bnProofOfWorkLimit;
+
+  if(fProofOfStake)
+  {
+    bnTargetLimit = bnProofOfStakeLimit;
+  }
+
+  if (pindexLast == NULL)
+    return bnTargetLimit.GetCompact(); // genesis block
+
+  const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
+  if (pindexPrev->pprev == NULL)
+    return bnTargetLimit.GetCompact(); // first block
+  const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
+  if (pindexPrevPrev->pprev == NULL)
+    return bnTargetLimit.GetCompact(); // second block
 
     int64 nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
 	if(nActualSpacing < 0)
@@ -3091,7 +3141,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         {
           vRecv >> pfrom->strSubVer;
           printf("peer connecting subver is %s",pfrom->strSubVer.c_str());
-          int iSubVer=pfrom->strSubVer.find("BitcoinFast:3");
+          int iSubVer=pfrom->strSubVer.find("BitcoinFast:3.1");
           if(iSubVer < 1)
           {
             printf("  -  disconnecting .....\n");
